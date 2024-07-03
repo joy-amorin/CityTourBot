@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({ query }),
             });
             const data = await response.json();
+            console.log(data);
             responseText.textContent = data.response;
         }catch (error) {
             responseText.textContent = 'Error al obtener la repuesta'
