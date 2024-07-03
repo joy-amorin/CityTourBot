@@ -8,10 +8,10 @@ app = FastAPI()
 # Middleware para permitir CORS y manejar OPTIONS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes ajustar esto según tus necesidades
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Permite todos los métodos (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],  # Permite todos los encabezados
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class Query(BaseModel):
