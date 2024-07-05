@@ -14,47 +14,53 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class Query(BaseModel):
-    query: str
+class EventQuery(BaseModel):
+    event_id: str
 
 @app.get("/")
 def read_root():
 
     return {"Hello": "World"}
     
-@app.post("/query")
-def handle_query(query: Query):
+@app.post("/event")
+def get_event_details(event_query: EventQuery):
 
     #get the query user
-    user_query = query.query.lower()
+    event_id = event_query.event_id.lower()
+    event_data = fetch_event_details(event_id)
 
-    #verify the query type and handle it properly
-    if "clima" in user_query or "tiempo" in user_query:
-        city = extract_city(user_query)
-        if city:
-            weather_data = get_weather(city)
-            return {"response": f"El clima en {city.capitalize()} es {weather_data['weather']}"}
+    if event_data:
+        return event_data
+    else:
+        raise HTTPException(status_code=404, detail=f"Evento {event_id} no encontrado")
+
+def fetch_event_details(event_id):
+     
+    try: 
+
+        headers = {
+                "Authorization": "Bearer TOKEN",
+                "Content-Type": "application/json"
+        }
+     
+        url =  f"https://www.eventbriteapi.com/v3/events/{event_id}/"
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            event_data = response.json()
+            return event_data
         else:
-            raise HTTPException(status_code=400, detail="Porfavor especifica una ciudad válid para consultar el clima")
-    else: 
-        return {"response": "Lo siento, no puedo responder esa consulta"}
-    
-def extract_city(query):
-    cities = ["montevideo", "buenos aires", "madrid"]
-    for city in cities:
-        if city in query:
-            return city
-    return None
-    
-def get_weather(city):
-    api_key = "ddb8b8da152ed986f3f270a8ab4ca2a8"
-    base_url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
-
-    try:
-        response = requests.get(base_url)
-        data = response.json()
-        weather = data["weather"][0]["description"]
-        return {"weather": weather}
+            return None
     except Exception as e:
-        print(f"Error sl obtener el clima para {city}: e")
-        return {"weather": "no disponible"}
+        print(f"Error al obtener información del evento {event_id}: {e}")
+        return None
+    
+def format_event_response(event_data):
+    name = event_data["name"]["text"]
+    url = event_data["url"]
+    start = event_data["start"]["local"]
+    end = event_data["end"]["local"]
+
+    formatted_event = {
+        "name": name, "url": url, "start": start, "end": end
+    }
+    return formatted_event
