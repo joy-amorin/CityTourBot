@@ -17,6 +17,12 @@ app.add_middleware(
 class EventQuery(BaseModel):
     event_id: str
 
+event_ids = [
+        "924471217297",
+        "932778063297",
+        "781315755457"
+    ]
+
 @app.get("/")
 def read_root():
 
@@ -30,7 +36,7 @@ def get_event_details(event_query: EventQuery):
     event_data = fetch_event_details(event_id)
 
     if event_data:
-        return event_data
+        return format_event_response(event_data)
     else:
         raise HTTPException(status_code=404, detail=f"Evento {event_id} no encontrado")
 
@@ -54,13 +60,25 @@ def fetch_event_details(event_id):
         print(f"Error al obtener información del evento {event_id}: {e}")
         return None
     
+@app.get("/events")
+def get_all_events():
+    events = []
+    for event_id in event_ids:
+        event_data = fetch_event_details(event_id)
+        if event_data:
+            events.append(format_event_response(event_data))
+    return {"events": events}
+    
+    
 def format_event_response(event_data):
     name = event_data["name"]["text"]
+    description = event_data["description"]["text"]
     url = event_data["url"]
     start = event_data["start"]["local"]
     end = event_data["end"]["local"]
 
+
     formatted_event = {
-        "name": name, "url": url, "start": start, "end": end
+       "name": name, "description": description, url: url, "start": start, "end": end,
     }
     return formatted_event
