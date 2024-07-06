@@ -2,7 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 from .routes import router
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 app = FastAPI()
 
 # Middleware para permitir CORS y manejar OPTIONS
@@ -13,8 +17,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 app.include_router(router)
+
+# Database configuration
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+Base.metadata.create_all(bind=engine) #create tables on database
+
+
 
 @app.get("/")
 def read_root():
@@ -24,7 +36,7 @@ def read_root():
 def fetch_event_details(event_id):
     try:
         headers = {
-            "Authorization": "Bearer K4CJXEYF2H7M6FTX5YBK",
+            "Authorization": "Bearer TOKEN",
             "Content-Type": "application/json"
         }
         url = f"https://www.eventbriteapi.com/v3/events/{event_id}/"
