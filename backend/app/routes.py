@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from .bot import chat 
-
+from .bot import chat
+from .models import Conversation
+from sqlalchemy.orm import session
+from .database import get_db
+import requests
 
 
 router = APIRouter()
@@ -16,10 +19,41 @@ event_ids = [
     "775002462227", "851785422127", "781315755457", "793158958797", "910933997107", 
     "871844208497", "924016687787", "910938340097", "881043062517", "881057285057"
 ]
+def fetch_event_details(event_id):
+    try:
+        headers = {
+            "Authorization": "Bearer K4CJXEYF2H7M6FTX5YBK",
+            "Content-Type": "application/json"
+        }
+        url = f"https://www.eventbriteapi.com/v3/events/{event_id}/"
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return None
+    except Exception as e:
+        print(f"Error al obtener información del evento {event_id}: {e}")
+        return None
+
+def format_event_response(event_data):
+    name = event_data["name"]["text"]
+    description = event_data["description"]["text"]
+    url = event_data["url"]
+    start = event_data["start"]["local"]
+    end = event_data["end"]["local"]
+
+    formatted_event = {
+        "name": name,
+        "description": description,
+        "url": url,
+        "start": start,
+        "end": end,
+    }
+    return formatted_event
+
 
 @router.post("/event")
 def get_event_details(event_query: EventQuery):
-    from .main import fetch_event_details, format_event_response
     event_id = event_query.event_id.lower()
 
     event_data = fetch_event_details(event_id)
@@ -30,7 +64,6 @@ def get_event_details(event_query: EventQuery):
 
 @router.get("/events")
 def get_all_events():
-    from .main import fetch_event_details, format_event_response
     events = []
     for event_id in event_ids:
         event_data = fetch_event_details(event_id)
@@ -39,6 +72,14 @@ def get_all_events():
     return {"events": events}
 
 @router.post("/chat")
-def handle_chat(query: Query):
+def handle_chat(query: Query, db: session = Depends(get_db)):
+    
     response = chat(query.query)
+    user_message = str(query.query)
+    bot_response = str(response["response"])
+    #save the conversation in the database
+    conversation = Conversation(user_message=user_message, bot_response=bot_response)
+    db.add(conversation)
+    db.commit()
+    db.refresh(conversation)
     return response
