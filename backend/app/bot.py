@@ -8,6 +8,6 @@ def chat(query):
         if events:
             return {"response": events}
         else:
-            return {"reponse": "No hay eventos disponibles"} 
+            return {"response": "No hay eventos disponibles"} 
     else:
         return {"response": "Lo siento no puedo responder esa consulta"}
