@@ -5,6 +5,7 @@ from .models import Conversation
 from sqlalchemy.orm import session
 from .database import get_db
 import requests
+import datetime
 
 
 router = APIRouter()
@@ -22,7 +23,7 @@ event_ids = [
 def fetch_event_details(event_id):
     try:
         headers = {
-            "Authorization": "Bearer K4CJXEYF2H7M6FTX5YBK",
+            "Authorization": "Bearer TOKEN",
             "Content-Type": "application/json"
         }
         url = f"https://www.eventbriteapi.com/v3/events/{event_id}/"
@@ -71,6 +72,25 @@ def get_all_events():
             events.append(format_event_response(event_data))
     return {"events": events}
 
+def extract_month_from_query(user_query):
+    months = { "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, 
+                "mayo": 5, "junio": 6,"julio": 7, "agosto": 8, 
+                "setiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
+            }
+    for month_name, month_number in months.items():
+        if month_name in user_query:
+            return month_number
+    raise ValueError("No se pudo extraer el mes")
+
+def filter_events_by_month(events, month):
+    filtered_events = []
+    for event in events:
+        start_date_str = event["start"]
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
+        if start_date.month == month:
+            filtered_events(event)
+    return filtered_events
+
 @router.post("/chat")
 def handle_chat(query: Query, db: session = Depends(get_db)):
     
@@ -83,3 +103,4 @@ def handle_chat(query: Query, db: session = Depends(get_db)):
     db.commit()
     db.refresh(conversation)
     return response
+
