@@ -8,6 +8,16 @@ def chat(query):
         if events:
             return {"response": events}
         else:
-            return {"response": "No hay eventos disponibles"} 
+            return {"response": "No hay eventos disponibles"}
+        
+    if "eventos de este mes" in user_query:
+        from .routes import events_this_month
+        events = events_this_month()
+        if events:
+            return {"response": events}
+        else:
+            return {"response": "No hay eventos disponibles para este mes"}
     else:
         return {"response": "Lo siento no puedo responder esa consulta"}
+    
+    

@@ -5,7 +5,7 @@ from .models import Conversation
 from sqlalchemy.orm import session
 from .database import get_db
 import requests
-import datetime
+from datetime import datetime
 
 
 router = APIRouter()
@@ -82,14 +82,25 @@ def extract_month_from_query(user_query):
             return month_number
     raise ValueError("No se pudo extraer el mes")
 
-def filter_events_by_month(events, month):
+def filter_events_by_month(month):
+    all_events = get_all_events()
     filtered_events = []
-    for event in events:
+    for event in all_events["events"]:
         start_date_str = event["start"]
         start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
         if start_date.month == month:
-            filtered_events(event)
-    return filtered_events
+            filtered_events.append(event)
+    return {"filtered_events": filtered_events}
+
+def events_this_month():
+    current_month = datetime.now().month
+    this_month_events = filter_events_by_month(current_month)
+    return this_month_events
+
+def get_events_by_specific_month(month):
+    all_events = get_all_events()
+    events_in_specific_month = filter_events_by_month(all_events,month)
+    return events_in_specific_month
 
 @router.post("/chat")
 def handle_chat(query: Query, db: session = Depends(get_db)):
@@ -103,4 +114,3 @@ def handle_chat(query: Query, db: session = Depends(get_db)):
     db.commit()
     db.refresh(conversation)
     return response
-
