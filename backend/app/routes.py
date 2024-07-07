@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from .bot import chat
 from .models import Conversation
-from sqlalchemy.orm import session
+from sqlalchemy.orm import Session
 from .database import get_db
 import requests
 from datetime import datetime
@@ -12,14 +12,22 @@ router = APIRouter()
 
 class EventQuery(BaseModel):
     event_id: str
+class OnlineEventQuery(BaseModel):
+    online_event_id: str
 class Query(BaseModel):
     query: str
 event_ids = [
     "924471217297", "932778063297", "781315755457", "923043216107", "793158958797", 
     "779466975707", "866379744137", "777857772537", "910921449577", "939849454017", 
     "775002462227", "851785422127", "781315755457", "793158958797", "910933997107", 
-    "871844208497", "924016687787", "910938340097", "881043062517", "881057285057"
+    "871844208497", "924016687787", "910938340097", "881043062517", "881057285057",
+    "942544254237"
 ]
+online_event_ids = [
+    "939475896697", "923444977787","917343347647", "63049080497",
+    "680004109597"
+]
+
 def fetch_event_details(event_id):
     try:
         headers = {
@@ -72,6 +80,18 @@ def get_all_events():
             events.append(format_event_response(event_data))
     return {"events": events}
 
+@router.get("/online_events")
+def get_online_events():
+    online_events = []
+    for online_event_id in online_event_ids:
+        online_event_data = fetch_event_details(online_event_id)
+        if online_event_data:
+            online_events.append(format_event_response(online_event_data))
+            #return {"online_events": online_events}
+        #else:
+            #return None
+    return {"online_events": online_events}
+
 def extract_month_from_query(user_query):
     months = { "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, 
                 "mayo": 5, "junio": 6,"julio": 7, "agosto": 8, 
@@ -80,7 +100,8 @@ def extract_month_from_query(user_query):
     for month_name, month_number in months.items():
         if month_name in user_query:
             return month_number
-    raise ValueError("No se pudo extraer el mes")
+    #raise ValueError("No se pudo extraer el mes")
+    return None
 
 def filter_events_by_month(month):
     all_events = get_all_events()
@@ -90,11 +111,16 @@ def filter_events_by_month(month):
         start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
         if start_date.month == month:
             filtered_events.append(event)
+    if not filtered_events:
+        return None
+    
     return {"filtered_events": filtered_events}
 
 def events_this_month():
     current_month = datetime.now().month
     this_month_events = filter_events_by_month(current_month)
+    if not this_month_events:
+        return None
     return this_month_events
 
 def get_events_by_specific_month(month):
@@ -103,7 +129,7 @@ def get_events_by_specific_month(month):
     return events_in_specific_month
 
 @router.post("/chat")
-def handle_chat(query: Query, db: session = Depends(get_db)):
+def handle_chat(query: Query, db: Session = Depends(get_db)):
     
     response = chat(query.query)
     user_message = str(query.query)
@@ -114,3 +140,8 @@ def handle_chat(query: Query, db: session = Depends(get_db)):
     db.commit()
     db.refresh(conversation)
     return response
+
+@router.get("/conversations/")
+def get_conversations(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    conversations = db.query(Conversation).offset(skip).limit(limit).all()
+    return conversations
