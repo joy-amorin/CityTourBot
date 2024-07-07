@@ -98,8 +98,8 @@ def events_this_month():
     return this_month_events
 
 def get_events_by_specific_month(month):
-    all_events = get_all_events()
-    events_in_specific_month = filter_events_by_month(all_events,month)
+    #all_events = get_all_events()
+    events_in_specific_month = filter_events_by_month(month)
     return events_in_specific_month
 
 @router.post("/chat")
