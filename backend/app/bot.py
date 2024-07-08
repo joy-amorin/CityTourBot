@@ -1,42 +1,43 @@
+# Variable global para almacenar el estado de la conversación
+conversation_state = {"last_question": None}
+
 def chat(query):
+    global conversation_state
     user_query = query.lower()
 
-    # Saludo inicial
-    if user_query in ["hola", "hi", "buenos días", "buenas tardes", "buenas noches"]:
-        return {"response": "¡Hola! Soy tu chatbot de eventos. ¿Qué tipo de eventos te gustaría conocer?\n1. Eventos presenciales\n2. Eventos online"}
+    # Saludo inicial y primer pregunta
+    if conversation_state["last_question"] is None:
+        if user_query in ["hola", "hi", "buenos días", "buenas tardes", "buenas noches"]:
+            conversation_state["last_question"] = "tipo_evento"
+            return {"response": "¡Hola! Soy tu chatbot de eventos. ¿Qué tipo de eventos te gustaría conocer?\n1. Eventos presenciales\n2. Eventos online"}
 
-    # Eventos presenciales
-    if "eventos presenciales" in user_query:
-        return {"response": "¿Quieres ver los eventos locales del mes actual o de algún otro mes?"}
-
-    # Eventos de este mes
-    elif "eventos de este mes" in user_query:
-        from .routes import events_this_month
-        events = events_this_month()
-        if events:
-            return {"response": f"Con gusto te mostraré los eventos de interés de este mes:\n{events}"}
+    # Manejo de respuesta a la primera pregunta
+    if conversation_state["last_question"] == "tipo_evento":
+        if "eventos presenciales" in user_query:
+            conversation_state["last_question"] = "evento_presencial_mes"
+            return {"response": "¿Quieres ver los eventos locales del mes actual o de algún otro mes?"}
+        elif "eventos online" in user_query:
+            conversation_state["last_question"] = None  # Resetear el estado después de esta respuesta
+            return {"response": "Aquí tienes los eventos online disponibles. ¿Te gustaría ver más detalles sobre alguno en particular?"}
         else:
-            return {"response": "No hay eventos disponibles para este mes por el momento, pero puedes intentar luego y ver si hay novedades."}
+            # Si la respuesta no es válida, repetir la pregunta
+            return {"response": "¿Qué tipo de eventos te gustaría conocer?\n1. Eventos presenciales\n2. Eventos online"}
 
-    # Eventos online
-    elif "eventos online" in user_query:
-        from .routes import get_online_events
-        events = get_online_events()
-        if events:
-            return {"response": f"Aquí tienes los eventos online disponibles:\n{events}"}
-        else:
-            return {"response": "No hay eventos online disponibles por el momento, pero puedes intentar luego y ver si hay novedades."}
-
-    # Consulta por mes específico
-    else:
-        from .routes import extract_month_from_query, get_events_by_specific_month
-        month = extract_month_from_query(user_query)
-        if month:
-            events = get_events_by_specific_month(month)
+    # Manejo de respuesta a la pregunta sobre eventos presenciales
+    if conversation_state["last_question"] == "evento_presencial_mes":
+        if "mes actual" in user_query or "otro mes" in user_query:
+            from .routes import events_this_month
+            events = events_this_month()
+            conversation_state["last_question"] = None  # Resetear el estado después de esta respuesta
             if events:
-                return {"response": f"Claro, te mostraré los eventos de {month}:\n{events}"}
+                return {"response": f"Con gusto te mostraré los eventos de interés de este mes:\n{events}"}
             else:
-                return {"response": f"No hay eventos disponibles para el mes {month}, pero puedes intentar luego y ver si hay novedades."}
+                return {"response": "No hay eventos disponibles para este mes por el momento, pero puedes intentar luego y ver si hay novedades."}
+        else:
+            # Si la respuesta no es válida, repetir la pregunta
+            return {"response": "¿Quieres ver los eventos locales del mes actual o de algún otro mes?"}
 
     # Respuesta por defecto para entradas no reconocidas
     return {"response": "Lo siento, no entendí tu pregunta. ¿Podrías ser más específico?"}
+
+
