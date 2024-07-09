@@ -19,9 +19,9 @@ def chat(query):
         elif "eventos online" in user_query:
             from .routes import get_online_events
             events = get_online_events()
-            conversation_state["last_question"] = None  # Reset status after this response
+            conversation_state["last_question"] = "preguntar_evento_presencial"
             if events:
-                return {"response": f"Aquí tienes los eventos online disponibles. Si quieres ver más detalles del evento puedes entrar al link!!\n{events}"}
+                return {"response": f"Aquí tienes los eventos online disponibles. Si quieres ver más detalles del evento puedes entrar al link!!\n{events}\n¿Te gustaría consultar eventos presenciales también? Responde con 'sí' o 'no'."}
             else:
                 return {"response": "No hay eventos online disponibles por el momento, pero puedes intentar luego y ver si hay novedades."}
         else:
@@ -68,6 +68,17 @@ def chat(query):
             return {"response": "¡Entendido! ¿Qué tipo de eventos te gustaría conocer?\n1. Eventos presenciales\n2. Eventos online"}
         else:
             return {"response": "¿Te gustaría ver eventos de otro mes? Responde con 'sí' o 'no'."}
+        
+    # Handling of asking about on-site events after online events
+    if conversation_state["last_question"] == "preguntar_evento_presencial":
+        if "si" in user_query or "sí" in user_query:
+            conversation_state["last_question"] = "evento_presencial_mes"
+            return {"response": "¿Quieres ver los eventos locales del mes actual o de algún otro mes?"}
+        elif "no" in user_query:
+            conversation_state["last_question"] = "tipo_evento"
+            return {"response": "¡Entendido! ¿Qué tipo de eventos te gustaría conocer?\n1. Eventos presenciales\n2. Eventos online"}
+        else:
+            return {"response": "¿Te gustaría consultar eventos presenciales también? Responde con 'sí' o 'no'."}
 
     # Default response for unrecognized entries
     return {"response": "Lo siento, no entendí tu pregunta. ¿Podrías ser más específico?"}
