@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from .database import get_db
 import requests
 from datetime import datetime
+from uuid import uuid4
+import json
 
 
 router = APIRouter()
@@ -16,6 +18,7 @@ class OnlineEventQuery(BaseModel):
     online_event_id: str
 class Query(BaseModel):
     query: str
+    #user_id: str
 event_ids = [
     "924471217297", "932778063297", "781315755457", "923043216107", "793158958797", 
     "779466975707", "866379744137", "777857772537", "910921449577", "939849454017", 
@@ -31,7 +34,7 @@ online_event_ids = [
 def fetch_event_details(event_id):
     try:
         headers = {
-            "Authorization": "Bearer TOKEN",
+            "Authorization": "Bearer K4CJXEYF2H7M6FTX5YBK",
             "Content-Type": "application/json"
         }
         url = f"https://www.eventbriteapi.com/v3/events/{event_id}/"
@@ -87,10 +90,11 @@ def get_online_events():
         online_event_data = fetch_event_details(online_event_id)
         if online_event_data:
             online_events.append(format_event_response(online_event_data))
-            #return {"online_events": online_events}
-        #else:
-            #return None
-    return {"online_events": online_events}
+    
+   
+    return online_events
+
+
 
 def extract_month_from_query(user_query):
     months = { "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, 
@@ -127,6 +131,7 @@ def get_events_by_specific_month(month):
     #all_events = get_all_events()
     events_in_specific_month = filter_events_by_month(month)
     return events_in_specific_month
+
 
 @router.post("/chat")
 def handle_chat(query: Query, db: Session = Depends(get_db)):
