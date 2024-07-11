@@ -1,24 +1,24 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from .bot import chat
-from .models import Conversation
 from sqlalchemy.orm import Session
 from .database import get_db
+from .models import Conversation
+from .bot import chat
 import requests
 from datetime import datetime
-from uuid import uuid4
 import json
-
 
 router = APIRouter()
 
 class EventQuery(BaseModel):
     event_id: str
+
 class OnlineEventQuery(BaseModel):
     online_event_id: str
+
 class Query(BaseModel):
     query: str
-    #user_id: str
+
 event_ids = [
     "924471217297", "932778063297", "781315755457", "923043216107", "793158958797", 
     "779466975707", "866379744137", "777857772537", "910921449577", "939849454017", 
@@ -26,8 +26,9 @@ event_ids = [
     "871844208497", "924016687787", "910938340097", "881043062517", "881057285057",
     "942544254237"
 ]
+
 online_event_ids = [
-    "939475896697", "923444977787","917343347647", "63049080497",
+    "939475896697", "923444977787", "917343347647", "63049080497",
     "680004109597"
 ]
 
@@ -63,11 +64,9 @@ def format_event_response(event_data):
     }
     return formatted_event
 
-
 @router.post("/event")
 def get_event_details(event_query: EventQuery):
     event_id = event_query.event_id.lower()
-
     event_data = fetch_event_details(event_id)
     if event_data:
         return format_event_response(event_data)
@@ -90,21 +89,17 @@ def get_online_events():
         online_event_data = fetch_event_details(online_event_id)
         if online_event_data:
             online_events.append(format_event_response(online_event_data))
-    
-   
     return online_events
 
-
-
 def extract_month_from_query(user_query):
-    months = { "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, 
-                "mayo": 5, "junio": 6,"julio": 7, "agosto": 8, 
-                "setiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
-            }
+    months = { 
+        "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, 
+        "mayo": 5, "junio": 6,"julio": 7, "agosto": 8, 
+        "setiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
+    }
     for month_name, month_number in months.items():
         if month_name in user_query:
             return month_number
-    #raise ValueError("No se pudo extraer el mes")
     return None
 
 def filter_events_by_month(month):
@@ -117,7 +112,6 @@ def filter_events_by_month(month):
             filtered_events.append(event)
     if not filtered_events:
         return None
-    
     return {"filtered_events": filtered_events}
 
 def events_this_month():
@@ -128,23 +122,25 @@ def events_this_month():
     return this_month_events
 
 def get_events_by_specific_month(month):
-    #all_events = get_all_events()
     events_in_specific_month = filter_events_by_month(month)
     return events_in_specific_month
 
-
 @router.post("/chat")
 def handle_chat(query: Query, db: Session = Depends(get_db)):
-    
-    response = chat(query.query)
-    user_message = str(query.query)
-    bot_response = str(response["response"])
-    #save the conversation in the database
-    conversation = Conversation(user_message=user_message, bot_response=bot_response)
-    db.add(conversation)
-    db.commit()
-    db.refresh(conversation)
-    return response
+    try:
+        response = chat(query.query)
+        user_message = query.query
+        
+       #save the conversation in the database
+        conversation = Conversation(user_message=user_message, bot_response=str(response))
+        db.add(conversation)
+        db.commit()
+        db.refresh(conversation)
+        
+        return response  # Devuelve la respuesta completa del bot
+
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/conversations/")
 def get_conversations(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
