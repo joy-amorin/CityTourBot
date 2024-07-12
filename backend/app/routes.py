@@ -80,7 +80,7 @@ def get_all_events():
         event_data = fetch_event_details(event_id)
         if event_data:
             events.append(format_event_response(event_data))
-    return {"events": events}
+    return events
 
 @router.get("/online_events")
 def get_online_events():
@@ -105,21 +105,25 @@ def extract_month_from_query(user_query):
 def filter_events_by_month(month):
     all_events = get_all_events()
     filtered_events = []
-    for event in all_events["events"]:
+    for event in all_events:
         start_date_str = event["start"]
         start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S")
         if start_date.month == month:
             filtered_events.append(event)
-    if not filtered_events:
-        return None
-    return {"filtered_events": filtered_events}
+    return filtered_events
 
 def events_this_month():
     current_month = datetime.now().month
     this_month_events = filter_events_by_month(current_month)
-    if not this_month_events:
-        return None
     return this_month_events
+
+@router.get("/current_month_events")
+def get_current_month_events():
+    current_month_events = events_this_month()
+    if current_month_events:
+        return {"message": "Eventos del mes actual encontrados", "events": current_month_events}
+    else:
+        return {"message": "No hay eventos disponibles para este mes"}
 
 def get_events_by_specific_month(month):
     events_in_specific_month = filter_events_by_month(month)
