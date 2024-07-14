@@ -35,7 +35,7 @@ online_event_ids = [
 def fetch_event_details(event_id):
     try:
         headers = {
-            "Authorization": "Bearer K4CJXEYF2H7M6FTX5YBK",
+            "Authorization": "Bearer TOKEN",
             "Content-Type": "application/json"
         }
         url = f"https://www.eventbriteapi.com/v3/events/{event_id}/"
