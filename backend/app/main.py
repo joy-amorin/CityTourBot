@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import requests
 from .routes import router
 from .database import init_db, register_shutdown_event
+from .database import create_tables
 from . import models  # Ensure models are imported
 
 app = FastAPI()
@@ -19,6 +20,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(router)
+
+@app.on_event("startup")
+def on_startup():
+    create_tables()
 
 @app.get("/")
 def read_root():

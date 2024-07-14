@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from .database import get_db
+from .database import get_db, create_tables
 from .models import Conversation
 from .bot import chat
 import requests
 from datetime import datetime
-import json
+import uuid
 
 router = APIRouter()
 
@@ -35,7 +35,7 @@ online_event_ids = [
 def fetch_event_details(event_id):
     try:
         headers = {
-            "Authorization": "Bearer TOKEN",
+            "Authorization": "Bearer K4CJXEYF2H7M6FTX5YBK",
             "Content-Type": "application/json"
         }
         url = f"https://www.eventbriteapi.com/v3/events/{event_id}/"
@@ -129,14 +129,18 @@ def get_events_by_specific_month(month):
     events_in_specific_month = filter_events_by_month(month)
     return events_in_specific_month
 
+def generate_user_id():
+    return str(uuid.uuid4())
+    
+
 @router.post("/chat")
-def handle_chat(query: Query, db: Session = Depends(get_db)):
+def handle_chat(query: Query, user_id: str = generate_user_id(), db: Session = Depends(get_db)):
     try:
         response = chat(query.query)
         user_message = query.query
         
        #save the conversation in the database
-        conversation = Conversation(user_message=user_message, bot_response=str(response))
+        conversation = Conversation(user_id=user_id, user_message=user_message, bot_response=str(response))
         db.add(conversation)
         db.commit()
         db.refresh(conversation)

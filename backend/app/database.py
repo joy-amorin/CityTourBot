@@ -29,3 +29,6 @@ def register_shutdown_event(app: FastAPI):
     @app.on_event("shutdown")
     def shutdown():
         shut_down_session()
+
+def create_tables():
+    SQLModel.metadata.create_all(bind=engine)
