@@ -7,6 +7,7 @@ from .bot import chat
 import requests
 from datetime import datetime
 import uuid
+from typing import Dict
 
 router = APIRouter()
 
@@ -35,7 +36,7 @@ online_event_ids = [
 def fetch_event_details(event_id):
     try:
         headers = {
-            "Authorization": "Bearer TOKEN",
+            "Authorization": "Bearer K4CJXEYF2H7M6FTX5YBK",
             "Content-Type": "application/json"
         }
         url = f"https://www.eventbriteapi.com/v3/events/{event_id}/"
@@ -132,20 +133,27 @@ def get_events_by_specific_month(month):
 def generate_user_id():
     return str(uuid.uuid4())
     
+def initial_conversation_state() -> Dict:
+    return {"last_question":None} 
 
 @router.post("/chat")
-def handle_chat(query: Query, user_id: str = generate_user_id(), db: Session = Depends(get_db)):
+def handle_chat(query: Query, 
+                conversation_state: Dict = Depends(initial_conversation_state),
+                user_id: str = generate_user_id(),
+                db: Session = Depends(get_db)):
     try:
-        response = chat(query.query)
+        response, updated_state = chat(query.query,conversation_state)
         user_message = query.query
         
        #save the conversation in the database
-        conversation = Conversation(user_id=user_id, user_message=user_message, bot_response=str(response))
+        conversation = Conversation(user_id=user_id, 
+                                    user_message=user_message, 
+                                    bot_response=str(response))
         db.add(conversation)
         db.commit()
         db.refresh(conversation)
         
-        return response  # Devuelve la respuesta completa del bot
+        return {"response": response, "conversation_state": updated_state}  # Devuelve la respuesta completa del bot
 
     except Exception as e:
         return {"error": str(e)}
